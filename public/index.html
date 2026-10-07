@@ -1,0 +1,129 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Gemini Recap Studio</title>
+<style>
+:root{--bg:#08090d;--panel:#101219;--line:#252936;--text:#f5f7fb;--muted:#8f96a8;--accent:#8b7cff;--accent2:#5eead4;--danger:#fb7185}
+*{box-sizing:border-box}body{margin:0;background:radial-gradient(circle at 20% 0%,#19142d 0,#08090d 42%),#08090d;color:var(--text);font:14px Inter,system-ui,sans-serif}
+.wrap{max-width:1180px;margin:auto;padding:28px}.top{display:flex;align-items:center;justify-content:space-between;margin-bottom:22px}
+.brand{display:flex;gap:12px;align-items:center}.gem{width:38px;height:38px;border-radius:12px;background:linear-gradient(135deg,#a78bfa,#5eead4);box-shadow:0 0 35px #8b7cff55}.brand b{font-size:18px}.brand span{display:block;color:var(--muted);font-size:12px;margin-top:3px}
+.grid{display:grid;grid-template-columns:1.15fr .85fr;gap:18px}.card{background:#101219dd;border:1px solid var(--line);border-radius:18px;padding:20px;box-shadow:0 15px 50px #0005}.full{grid-column:1/-1}
+h2{font-size:17px;margin:0 0 16px}.label{color:#aeb5c7;font-size:12px;margin:13px 0 7px;display:block}
+input,select,textarea{width:100%;background:#0b0d12;color:var(--text);border:1px solid #2a2e3a;border-radius:11px;padding:11px;outline:none}textarea{min-height:150px;resize:vertical}
+.row{display:grid;grid-template-columns:1fr 1fr;gap:10px}.row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
+button{border:0;border-radius:11px;padding:12px 15px;color:#fff;background:#282d3a;cursor:pointer;font-weight:700}.primary{background:linear-gradient(135deg,#8b7cff,#6d5df5)}button:disabled{opacity:.45;cursor:not-allowed}
+.actions{display:flex;gap:9px;margin-top:15px;flex-wrap:wrap}.status{color:var(--muted);margin-top:10px;font-size:12px;min-height:18px}
+.steps{display:grid;grid-template-columns:repeat(7,1fr);gap:7px;margin-bottom:18px}.step{padding:9px 5px;text-align:center;border:1px solid #252936;border-radius:9px;color:#737b8f;font-size:10px}.step.on{color:#fff;border-color:#7769ee;background:#7769ee18}.step.done{color:#5eead4;border-color:#2c6d64}
+.preview{aspect-ratio:16/9;background:#05060a;border:1px solid #252936;border-radius:14px;display:flex;align-items:center;justify-content:center;overflow:hidden;position:relative}.preview video{width:100%;height:100%;object-fit:contain}.logo-preview{position:absolute;max-width:20%;max-height:20%;display:none;pointer-events:none}.blur-box{position:absolute;border:2px dashed #fda4af;background:#fb718520;display:none;pointer-events:none}
+.range{width:100%}.pill{display:inline-block;padding:5px 9px;border-radius:999px;background:#191d27;color:#aeb5c7;font-size:11px}.result{white-space:pre-wrap;line-height:1.6;color:#d8dcea}
+@media(max-width:850px){.grid{grid-template-columns:1fr}.steps{grid-template-columns:repeat(4,1fr)}}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header class="top"><div class="brand"><div class="gem"></div><div><b>Gemini Recap Studio</b><span>Myanmar AI Video Recap · Vercel Edition</span></div></div><span class="pill" id="health">Checking Gemini…</span></header>
+
+<div class="steps" id="steps">
+<div class="step on">01 URL</div><div class="step">02 Gemini Video</div><div class="step">03 AI Script</div><div class="step">04 Gemini TTS</div><div class="step">05 Edit</div><div class="step">06 Preview</div><div class="step">07 Complete</div>
+</div>
+
+<div class="grid">
+<section class="card">
+<h2>Source & Gemini</h2>
+<label class="label">YouTube URL</label>
+<input id="url" placeholder="https://www.youtube.com/watch?v=...">
+<div class="row">
+<div><label class="label">Recap duration</label><select id="duration"><option value="60">60 seconds</option><option value="180" selected>3 minutes</option><option value="420">7 minutes</option><option value="600">10 minutes</option></select></div>
+<div><label class="label">Video processing</label><select id="processing"><option value="agentic" selected>Agentic · long-form</option><option value="static">Static · frame scan</option></select></div>
+</div>
+<div class="row">
+<div><label class="label">Gemini voice</label><select id="voice"><option>Kore</option><option>Puck</option><option>Charon</option></select></div>
+<div><label class="label">Subtitle position</label><select id="subPos"><option value="bottom">Bottom</option><option value="top">Top</option><option value="middle">Middle</option></select></div>
+</div>
+<div class="actions"><button class="primary" id="analyze">Analyze with Gemini</button></div>
+<div class="status" id="status">Public YouTube URLs can be analyzed directly by Gemini.</div>
+</section>
+
+<section class="card">
+<h2>Real source preview</h2>
+<div class="preview">
+<video id="video" controls></video>
+<img id="logoPreview" class="logo-preview">
+<div id="blurBox" class="blur-box"></div>
+<div id="emptyPreview" style="color:#6f778b">Upload the source video here for browser-side editing</div>
+</div>
+<label class="label">Source video file (for final local/browser render)</label>
+<input id="videoFile" type="file" accept="video/*">
+<div class="actions"><button id="makeAudio" disabled>Generate Gemini TTS</button><button id="render" class="primary" disabled>Render Preview</button></div>
+<div class="status">YouTube analysis happens server-side. Final source-video editing stays in the browser so Vercel does not need yt-dlp/FFmpeg.</div>
+</section>
+
+<section class="card">
+<h2>Logo overlay</h2>
+<label class="label">Logo PNG / WebP / JPG</label><input id="logo" type="file" accept="image/png,image/webp,image/jpeg">
+<div class="row3">
+<div><label class="label">Position</label><select id="logoPos"><option value="tl">Top-left</option><option value="tr" selected>Top-right</option><option value="bl">Bottom-left</option><option value="br">Bottom-right</option></select></div>
+<div><label class="label">Size</label><input id="logoSize" class="range" type="range" min="5" max="35" value="16"></div>
+<div><label class="label">Opacity</label><input id="logoOpacity" class="range" type="range" min="20" max="100" value="90"></div>
+</div>
+</section>
+
+<section class="card">
+<h2>Text Blur</h2>
+<div class="row3">
+<div><label class="label">X %</label><input id="bx" type="number" value="65" min="0" max="100"></div>
+<div><label class="label">Y %</label><input id="by" type="number" value="8" min="0" max="100"></div>
+<div><label class="label">Width %</label><input id="bw" type="number" value="28" min="1" max="100"></div>
+</div>
+<div class="row">
+<div><label class="label">Height %</label><input id="bh" type="number" value="10" min="1" max="100"></div>
+<div><label class="label">Blur intensity</label><input id="blur" class="range" type="range" min="2" max="30" value="12"></div>
+</div>
+<div class="actions"><button id="toggleBlur">Show blur region</button></div>
+</section>
+
+<section class="card full">
+<h2>Gemini AI Script</h2>
+<textarea id="script" placeholder="Gemini-generated Myanmar narration will appear here…"></textarea>
+<div class="actions"><button id="copy">Copy Script</button><button id="downloadSrt">Download SRT</button></div>
+</section>
+
+<section class="card full">
+<h2>AI Result</h2>
+<div class="result" id="result">Waiting for Gemini analysis…</div>
+</section>
+</div>
+</div>
+<script>
+const $=id=>document.getElementById(id), steps=[...document.querySelectorAll('.step')];
+let plan=null, audioB64=null, logoUrl=null;
+function step(n){steps.forEach((x,i)=>x.classList.toggle('on',i===n));steps.forEach((x,i)=>x.classList.toggle('done',i<n))}
+function status(s){$('status').textContent=s}
+async function json(url,body){const r=await fetch(url,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(body)});const d=await r.json();if(!r.ok)throw Error(d.error||'Request failed');return d}
+fetch('/api/health').then(r=>r.json()).then(d=>{$('health').textContent=d.geminiConfigured?'Gemini Connected':'Add GEMINI_API_KEY';$('health').style.color=d.geminiConfigured?'#5eead4':'#fb7185'}).catch(()=>{$('health').textContent='API offline'});
+
+$('analyze').onclick=async()=>{
+ try{step(1);$('analyze').disabled=true;status('Gemini is analyzing the YouTube video…');
+ const d=await json('/api/analyze',{youtubeUrl:$('url').value.trim(),duration:+$('duration').value,processing:$('processing').value});
+ plan=d.data; $('script').value=plan.narration||''; $('result').textContent=JSON.stringify(plan,null,2);step(2);status('Gemini script ready. Upload the source video for the final browser render.');$('makeAudio').disabled=false;
+ }catch(e){status(e.message);$('result').textContent='Error: '+e.message}finally{$('analyze').disabled=false}
+};
+$('makeAudio').onclick=async()=>{
+ try{step(3);$('makeAudio').disabled=true;status('Gemini TTS is generating narration…');const d=await json('/api/tts',{text:$('script').value,voice:$('voice').value});audioB64=d.data;step(4);$('render').disabled=false;status('TTS ready. Logo/blur settings can now be applied.')}catch(e){status(e.message)}finally{$('makeAudio').disabled=false}
+};
+$('videoFile').onchange=e=>{const f=e.target.files[0];if(!f)return;$('video').src=URL.createObjectURL(f);$('emptyPreview').style.display='none';$('render').disabled=!audioB64};
+$('logo').onchange=e=>{const f=e.target.files[0];if(!f)return;logoUrl=URL.createObjectURL(f);$('logoPreview').src=logoUrl;$('logoPreview').style.display='block';applyLogo()};
+function applyLogo(){const p=$('logoPos').value,s=+$('logoSize').value,o=+$('logoOpacity').value/100,l=$('logoPreview');l.style.width=s+'%';l.style.opacity=o;l.style.top=p.includes('t')?'3%':'auto';l.style.bottom=p.includes('b')?'3%':'auto';l.style.left=p.includes('l')?'3%':'auto';l.style.right=p.includes('r')?'3%':'auto'}
+['logoPos','logoSize','logoOpacity'].forEach(x=>$(x).oninput=applyLogo);
+function applyBlur(){const b=$('blurBox');b.style.display='block';b.style.left=$('bx').value+'%';b.style.top=$('by').value+'%';b.style.width=$('bw').value+'%';b.style.height=$('bh').value+'%';b.style.backdropFilter=`blur(${$('blur').value}px)`}
+$('toggleBlur').onclick=()=>{const b=$('blurBox');if(b.style.display==='block'){b.style.display='none';$('toggleBlur').textContent='Show blur region'}else{applyBlur();$('toggleBlur').textContent='Hide blur region'}};
+['bx','by','bw','bh','blur'].forEach(x=>$(x).oninput=()=>{if($('blurBox').style.display==='block')applyBlur()});
+$('copy').onclick=()=>navigator.clipboard.writeText($('script').value);
+function srtTime(sec){const ms=Math.floor((sec%1)*1000),s=Math.floor(sec),h=Math.floor(s/3600),m=Math.floor((s%3600)/60),ss=s%60;return `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(ss).padStart(2,'0')},${String(ms).padStart(3,'0')}`}
+$('downloadSrt').onclick=()=>{if(!plan)return;let out='';(plan.scenes||[]).forEach((x,i)=>out+=`${i+1}\\n${srtTime(x.start)} --> ${srtTime(x.end)}\\n${x.subtitle||x.narration||''}\\n\\n`);const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([out],{type:'text/plain'}));a.download='myanmar-recap.srt';a.click()};
+$('render').onclick=()=>{step(5);status('Preview render settings are active. For production MP4 export, connect a video worker/storage backend.');$('result').textContent += '\\n\\nRENDER SETTINGS:\\nDuration: '+$('duration').value+'s\\nLogo: '+($('logo').files[0]?.name||'none')+'\\nBlur: '+[$('bx').value,$('by').value,$('bw').value,$('bh').value].join('% / ')};
+</script>
+</body>
+</html>
